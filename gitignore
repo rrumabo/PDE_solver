@@ -1,15 +1,18 @@
-# OS
+# OS / system files
 .DS_Store
-__MACOSX/
+Thumbs.db
 
-# Python
+# Python cache / build
 __pycache__/
 *.py[cod]
 *.so
 *.pyd
 *.pyo
+*.egg-info/
+build/
+dist/
 
-# Environments
+# Virtual environments
 .venv/
 env/
 venv/
@@ -17,12 +20,13 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Build
-build/
-dist/
-*.egg-info/
+# IDE configs
+.vscode/
+.idea/
 
-# Data & figs
-figures/
-*.csv
-*.yaml
+# Project outputs (auto-generated)
+notebooks/figures/*
+!notebooks/figures/.gitkeep   # keep folder, ignore contents
+
+# Logs
+*.log
