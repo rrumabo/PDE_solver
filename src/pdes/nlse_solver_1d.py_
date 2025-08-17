@@ -1,0 +1,14 @@
+import numpy as np
+from src.core.pde_systems import BasePDESystem
+
+class NLSESolver1D(BasePDESystem):
+    def __init__(self, laplacian, g=1.0, rhea_func=None, step_func=None, diagnostic_manager=None):
+        
+        self.laplacian = laplacian
+        self.g = g
+
+        def rhs_func(u, t):
+            rhea_term = 1j * rhea_func(t) * u if rhea_func else 0
+            return 1j * (self.laplacian @ u - self.g * np.abs(u)**2 * u) + rhea_term
+
+        super().__init__(rhs_func=rhs_func, step_func=step_func, diagnostic_manager=diagnostic_manager)

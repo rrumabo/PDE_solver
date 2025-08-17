@@ -1,0 +1,32 @@
+grid:
+  dim: 2
+  L: 1.0
+  N: 256       # Nx=Ny=N (square)
+
+bc:
+  type: periodic
+
+time:
+  dt: 2.5e-5   # diffusion: dt ≲ C*dx^2 (smaller than 1D)
+  T: 0.01
+
+physics:
+  pde: heat
+  params:
+    alpha: 1.0
+
+integrator:
+  method: rk4_op   # operator-aware RK4
+
+initial_condition:
+  type: gaussian   # uses 2D radially-symmetric bump below
+  center: 0.5      # fraction of L (x=y=0.5)
+  sigma: 0.08
+  amplitude: 1.0
+
+diagnostics:
+  - mass
+  - l2
+
+io:
+  outdir: figures
