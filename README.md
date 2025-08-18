@@ -27,7 +27,24 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # 3) Run a demo
-python main.py --config config.yaml
+## Running Simulations
+
+This project provides a simple CLI interface for running different PDE solvers.  
+All runs will generate outputs (plots, diagnostics, logs) inside `outputs/`.
+
+### Heat Equation (1D)
+```bash
+python main.py --pde heat --dim 1 --verbose
+```
+
+### Heat Equation (2D)
+```bash
+python main.py --pde heat --dim 2 --verbose
+```
+
+### Burgers’ Equation (1D)
+```bash
+python main.py --pde burgers --dim 1 --verbose
 ```
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Roadmap
