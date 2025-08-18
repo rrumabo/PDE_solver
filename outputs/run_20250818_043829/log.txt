@@ -1,0 +1,2 @@
+2025-08-18 04:38:29,597 [INFO] [heat1d] dt user=2.500e-05, rk4_max=1.062e-05 → using 8.499e-06
+2025-08-18 04:38:29,807 [INFO] Done heat 1D → /Users/linearityproductions/Desktop/PDE_solver/outputs/run_20250818_043829

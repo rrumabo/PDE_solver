@@ -1,38 +1,59 @@
-
-
 import numpy as np
 from src.core.pde_systems import BasePDESystem
 
 class BurgersSolver1D(BasePDESystem):
-    def __init__(self, L_op, dx, nu=0.01, step_func=None, diagnostic_manager=None):
-        """
-        Solves the 1D viscous Burgers' equation:
-            du/dt + u du/dx = nu * d^2u/dx^2
 
-        Args:
-            L_op (ndarray): Laplacian matrix (Nx x Nx)
-            dx (float): Spatial resolution
-            nu (float): Viscosity coefficient
-            step_func: Time integration method (e.g., rk4_step)
-            diagnostic_manager: Optional DiagnosticManager
-        """
-        self.L_op = L_op
-        self.dx = dx
-        self.nu = nu
+    def __init__(self, L_op, dx, nu=0.01, bc: str = "periodic", step_func=None, diagnostic_manager=None):
+        self.L_op = L_op               # (N x N) sparse/dense Laplacian
+        self.dx = float(dx)
+        self.nu = float(nu)
+        self.bc = str(bc).lower()
         self.dimension = 1
-        print("[BurgersSolver1D] Initialized with 1D configuration.")
+        self.step_func = step_func
 
         def rhs_func(u, t):
-            # Compute du/dx using central differences
-            dudx = np.zeros_like(u)
-            dudx[1:-1] = (u[2:] - u[:-2]) / (2 * dx)
-            # Periodic BCs
-            dudx[0] = (u[1] - u[-1]) / (2 * dx)
-            dudx[-1] = (u[0] - u[-2]) / (2 * dx)
+            # --- Rusanov/LLF flux for F(u)=0.5*u^2 ---
+            if self.bc == "periodic":
+                up = np.roll(u, -1)              # u_{i+1}
+                F  = 0.5 * u * u
+                Fp = 0.5 * up * up
+                a  = np.maximum(np.abs(u), np.abs(up))
+                F_iphalf = 0.5 * (F + Fp) - 0.5 * a * (up - u)
+                F_imhalf = np.roll(F_iphalf, 1)
+            else:
+                # simple one-sided ghosting to keep shape; diffusion BC handled by L_op
+                up = np.r_[u[1:], u[-1]]
+                F  = 0.5 * u * u
+                Fp = 0.5 * up * up
+                a  = np.maximum(np.abs(u), np.abs(up))
+                F_iphalf = 0.5 * (F + Fp) - 0.5 * a * (up - u)
+                F_imhalf = np.r_[F_iphalf[0], F_iphalf[:-1]]
 
-            convection = u * dudx
-            diffusion = nu * (L_op @ u)
+            adv = -(F_iphalf - F_imhalf) / self.dx
+            diff = self.nu * (self.L_op @ u)
+            return adv + diff
 
-            return -convection + diffusion
-
+        # delegate to BasePDESystem for time-stepping/diagnostics
         super().__init__(rhs_func=rhs_func, step_func=step_func, diagnostic_manager=diagnostic_manager)
+
+    # Provide a local run wrapper for convenience/compatibility
+    def run(self, u0, T, dt):
+        # If BasePDESystem already offers run, prefer that
+        base_run = getattr(super(), "run", None)
+        if callable(base_run):
+            return base_run(u0=u0, T=T, dt=dt)
+        # Fallback: minimal loop using the provided step_func
+        if self.step_func is None:
+            raise ValueError("step_func must be provided for time integration")
+        u = np.array(u0, dtype=float).copy()
+        t = 0.0
+        out = [u.copy()]
+        times = [t]
+        nsteps = int(np.ceil(T / dt))
+        step = self.step_func
+        for _ in range(nsteps):
+            u = step(u, self.rhs_func, t, dt)  # rhs_func is bound in BasePDESystem
+            t += dt
+            out.append(u.copy())
+            times.append(t)
+        return out, np.asarray(times)

@@ -42,8 +42,19 @@ def rk4_step_op(u, *, t, dt, L_op, rhs_func=None, diagnostics_fn=None):
 # Crank–Nicolson factory for du/dt = L u (dt-aware cached LU)
 def make_crank_nicolson_step(L_op):
     L_csc_any = L_op if (issparse(L_op) and getattr(L_op, "format", None) == "csc") else csc_matrix(L_op)
+
+    # Validate operator shape early (helps when a tuple or 1D array is passed by mistake)
+    shape = getattr(L_csc_any, "shape", None)
+    if shape is None:
+        raise TypeError(f"make_crank_nicolson_step: L_op of type {type(L_op).__name__} has no 'shape' attribute")
+    if not (len(shape) == 2):
+        raise ValueError(f"make_crank_nicolson_step: L_op must be 2D, got shape={shape}")
+    nrows, ncols = int(shape[0]), int(shape[1])
+    if nrows != ncols:
+        raise ValueError(f"make_crank_nicolson_step: L_op must be square, got {nrows}x{ncols}")
+
     L_csc: csc_matrix = cast(csc_matrix, L_csc_any)
-    N = int(L_csc.shape[0])
+    N = nrows
 
     class _CNCache(TypedDict):
         dt: Optional[float]
@@ -62,9 +73,12 @@ def make_crank_nicolson_step(L_op):
     def step(u, rhs_func, t, dt):
         _prepare(dt)
         u = np.asarray(u).reshape(-1)
-        assert cached["B"] is not None and cached["solver"] is not None
-        B: csc_matrix = cached["B"]
-        solver: SuperLU = cached["solver"]
+        B_opt = cached["B"]
+        solver_opt = cached["solver"]
+        if B_opt is None or solver_opt is None:
+            raise RuntimeError("Crank–Nicolson cache not prepared; call _prepare(dt) first")
+        B = cast(csc_matrix, B_opt)
+        solver = cast(SuperLU, solver_opt)
         rhs = B @ u
         return solver.solve(rhs)
     return step

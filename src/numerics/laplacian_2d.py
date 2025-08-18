@@ -36,7 +36,7 @@ def make_laplacian_2d(
 
     # 1D Laplacians
     e_x = np.ones(Nx)
-    Dx = sp.diags([-2*e_x, e_x, e_x], offsets=(0, -1, 1), shape=(Nx, Nx), format=fmt)
+    Dx = sp.diags([-2*e_x, e_x, e_x], offsets=(0, -1, 1), shape=(Nx, Nx), format=fmt)  # type: ignore[arg-type]
     if bc == "periodic":
         Dx = Dx.tolil(); Dx[0, -1] = 1.0; Dx[-1, 0] = 1.0; Dx = Dx.asformat(fmt)
     elif bc != "dirichlet":
@@ -44,7 +44,7 @@ def make_laplacian_2d(
     Dx = Dx * (1.0 / (dx*dx))
 
     e_y = np.ones(Ny)
-    Dy = sp.diags([-2*e_y, e_y, e_y], offsets=(0, -1, 1), shape=(Ny, Ny), format=fmt)
+    Dy = sp.diags([-2*e_y, e_y, e_y], offsets=(0, -1, 1), shape=(Ny, Ny), format=fmt)  # type: ignore[arg-type]
     if bc == "periodic":
         Dy = Dy.tolil(); Dy[0, -1] = 1.0; Dy[-1, 0] = 1.0; Dy = Dy.asformat(fmt)
     Dy = Dy * (1.0 / (dy*dy))
